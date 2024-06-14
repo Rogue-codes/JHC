@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "build": "npm install && echo 'Build step not needed for JavaScript'"
   },
   "keywords": [],
   "author": "",
