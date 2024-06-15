@@ -43,6 +43,11 @@ const registerDoctorSchema = Joi.object({
     "string.min": "Last name must be at least 3 characters long",
     "any.required": "Last name is required",
   }),
+  gender: Joi.string().valid("female", "male").min(4).required().messages({
+    "string.min": "gender must be at least 4 characters long",
+    "any.required": "gender is required",
+    "any.only": "Gender must be one of male, female",
+  }),
   phone: Joi.string().min(11).max(15).required().messages({
     "string.min": "Phone number must be at least 11 characters long",
     "string.max": "Phone number must be at most 15 characters long",
@@ -125,7 +130,7 @@ const createReservationSchema = Joi.object({
   }),
   doctor: Joi.string().required().messages({
     "any.required": "Doctor is required",
-  })
+  }),
 });
 
 const createHospitalSchema = Joi.object({
@@ -138,6 +143,18 @@ const createHospitalSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
+const validateEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+const validatePhoneSchema = Joi.object({
+  phone: Joi.string().min(11).max(15).required().messages({
+    "string.min": "Phone number must be at least 11 characters long",
+    "string.max": "Phone number must be at most 15 characters long",
+    "any.required": "Phone number is required",
+  }),
+});
+
 export const validateLogin = validator(loginSchema);
 export const validateCreateHospital = validator(createHospitalSchema);
 export const validateCreatePatient = validator(registerPatientSchema);
@@ -145,5 +162,9 @@ export const validateVerifyAccount = validator(verifyAccountSchema);
 export const validateForgotPassword = validator(forgotPasswordSchema);
 export const validateResetPassword = validator(resetPasswordSchema);
 export const validateDoctorSchema = validator(registerDoctorSchema);
-export const validateResetSystemGeneratedPassword = validator(resetSystemGeneratedPasswordSchema);
+export const validateResetSystemGeneratedPassword = validator(
+  resetSystemGeneratedPasswordSchema
+);
 export const validateReservation = validator(createReservationSchema);
+export const validateEmail = validator(validateEmailSchema);
+export const validatePhone = validator(validatePhoneSchema);

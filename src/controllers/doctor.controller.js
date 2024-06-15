@@ -1,12 +1,13 @@
 import {
   validateDoctorSchema,
+  validateEmail,
   validateLogin,
+  validatePhone,
   validateResetSystemGeneratedPassword,
 } from "../services/validator.js";
 import lodash from "lodash";
 import { genRandomPassword } from "../utils/genRandomNumber.js";
-import {
-  sendDoctorWelcomeMail} from "../services/mail.service.js";
+import { sendDoctorWelcomeMail } from "../services/mail.service.js";
 import bcrypt from "bcrypt";
 import { genToken } from "../utils/genToken.js";
 import DoctorModel from "../models/doctor.model.js";
@@ -30,6 +31,7 @@ export const registerDoctor = async (req, res) => {
       is_consultant,
       unit,
       img_url,
+      gender,
     } = req.body;
     // check if email already exist
     const alreadyExistingDoctor = await DoctorModel.findOne({ email });
@@ -66,6 +68,7 @@ export const registerDoctor = async (req, res) => {
       unit,
       password,
       img_url,
+      gender,
     });
 
     // return success message
@@ -147,7 +150,7 @@ export const changeSystemGeneratedPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
 
     doctor.is_verified = true;
-    doctor.password = await bcrypt.hash(password,salt);
+    doctor.password = await bcrypt.hash(password, salt);
     doctor.hasChangedSystemGeneratedPassword = true;
     doctor.is_active = true;
 
@@ -198,7 +201,7 @@ export const doctorLogin = async (req, res) => {
 
     // check if password is valid
     const isPasswordvalid = await doctor.comparePassword(password);
-    console.log('first', isPasswordvalid);
+    console.log("first", isPasswordvalid);
     if (!isPasswordvalid) {
       return res.status(400).json({
         success: false,
@@ -233,120 +236,235 @@ export const doctorLogin = async (req, res) => {
   }
 };
 
-
-
 // forgot password
-// export const forgotPassword = async (req, res) => {
-//   try {
-//     const { error } = validateForgotPassword(req.body);
-//     if (error) {
-//       return res.status(422).json({
-//         success: false,
-//         message: error.details[0].message,
-//       });
-//     }
+export const forgotPassword = async (req, res) => {
+  try {
+    const { error } = validateForgotPassword(req.body);
+    if (error) {
+      return res.status(422).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
 
-//     // get the patient using their email
-//     const patient = await PatientModel.findOne({ email: req.body.email });
-//     if (!patient) {
-//       return res.status(404).json({
-//         success: false,
-//         message: `email: ${req.body.email} does not exist on our records`,
-//       });
-//     }
+    // get the doctor using their email
+    const doctor = await DoctorModel.findOne({ email: req.body.email });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: `email: ${req.body.email} does not exist on our records`,
+      });
+    }
 
-//     const randDigits = genRandomNumber();
+    const randDigits = genRandomNumber();
 
-//     const salt = await bcrypt.genSalt(10);
-//     const verifyToken = await bcrypt.hash(randDigits, salt);
+    const salt = await bcrypt.genSalt(10);
+    const verifyToken = await bcrypt.hash(randDigits, salt);
 
-//     const now = new Date();
-//     patient.verifyToken = verifyToken;
-//     patient.tokenExpiresIn = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const now = new Date();
+    doctor.verifyToken = verifyToken;
+    doctor.tokenExpiresIn = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-//     await patient.save();
+    await doctor.save();
 
-//     // send it to patient mail
-//     sendPasswordResetMail(
-//       patient.email,
-//       randDigits,
-//       patient.first_name,
-//       patient.last_name
-//     );
-//     res.status(200).json({
-//       success: true,
-//       message: `verification token has been sent to ${patient.email}`,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
+    // send it to patient mail
+    sendPasswordResetMail(
+      doctor.email,
+      randDigits,
+      doctor.first_name,
+      doctor.last_name
+    );
+    res.status(200).json({
+      success: true,
+      message: `verification token has been sent to ${patient.email}`,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 // reset password
-// export const resetPassword = async (req, res) => {
-//   try {
-//     const { error } = validateResetPassword(req.body);
-//     if (error) {
-//       return res.status(422).json({
-//         success: false,
-//         message: error.details[0].message,
-//       });
-//     }
+export const resetPassword = async (req, res) => {
+  try {
+    const { error } = validateResetPassword(req.body);
+    if (error) {
+      return res.status(422).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
 
-//     const { email, token, password } = req.body;
+    const { email, token, password } = req.body;
 
-//     // get patient by email
-//     const patient = await PatientModel.findOne({ email });
-//     if (!patient) {
-//       return res.status(404).json({
-//         success: false,
-//         message: `patient with email: ${email} does not exists in our records`,
-//       });
-//     }
+    // get patient by email
+    const doctor = await DoctorModel.findOne({ email });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: `doctor with email: ${email} does not exists in our records`,
+      });
+    }
 
-//     const currentDate = new Date();
+    const currentDate = new Date();
 
-//     if (currentDate > patient.tokenExpiresIn) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "token has expired...",
-//       });
-//     }
+    if (currentDate > doctor.tokenExpiresIn) {
+      return res.status(400).json({
+        success: false,
+        message: "token has expired...",
+      });
+    }
 
-//     // verify token
-//     const isTokenValid = await bcrypt.compare(token, patient.verifyToken);
-//     if (!isTokenValid) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "invalid token...",
-//       });
-//     }
+    // verify token
+    const isTokenValid = await bcrypt.compare(token, doctor.verifyToken);
+    if (!isTokenValid) {
+      return res.status(400).json({
+        success: false,
+        message: "invalid token...",
+      });
+    }
 
-//     patient.password = password;
-//     patient.verifyToken = null;
-//     patient.tokenExpiresIn = null;
+    doctor.password = password;
+    doctor.verifyToken = null;
+    doctor.tokenExpiresIn = null;
 
-//     await patient.save();
+    await doctor.save();
 
-//     res.status(200).json({
-//       success: true,
-//       message: "account verified successfully",
-//     });
+    res.status(200).json({
+      success: true,
+      message: "account verified successfully",
+    });
 
-//     sendPasswordResetSuccessMail(
-//       patient.email,
-//       patient.first_name,
-//       patient.last_name
-//     );
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
+    sendPasswordResetSuccessMail(
+      doctor.email,
+      doctor.first_name,
+      doctor.last_name
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getDoctors = async (req, res) => {
+  try {
+    let query = DoctorModel.find();
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, "i");
+      query = query.find({
+        $or: [{ first_name: searchRegex }],
+      });
+    }
+
+    if (req.query.sort) {
+      const sortField = req.query.sort;
+      query = query.sort(sortField);
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    const doctorsCount = await DoctorModel.countDocuments(query.getQuery());
+    const last_page = Math.ceil(doctorsCount / limit);
+
+    if (page > last_page && last_page > 0) {
+      throw new Error("This page does not exist");
+    }
+
+    const allDoctors = await query.select("-password");
+
+    if (!allDoctors.length) {
+      return res.status(200).json({
+        status: "success",
+        message: "No Employee Found",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "All Doctors retrieved successfully",
+      data: allDoctors,
+      meta: {
+        per_page: limit,
+        current_page: page,
+        last_page: last_page,
+        total: doctorsCount,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const validateDoctorEmailAndPhone = async (req, res) => {
+  try {
+    if (req.query.email) {
+      const { error } = validateEmail(req.query);
+      if (error) {
+        return res.status(422).json({
+          success: false,
+          message: error.details[0].message,
+        });
+      }
+      const isExistingEmail = await DoctorModel.find({
+        email: req.query.email,
+      });
+      if (isExistingEmail.length > 0) {
+        return res.status(200).json({
+          data: true,
+        });
+      } else {
+        return res.status(200).json({
+          data: false,
+        });
+      }
+    } else if (req.query.phone) {
+      const { error } = validatePhone(req.query);
+      if (error) {
+        return res.status(422).json({
+          success: false,
+          message: error.details[0].message,
+        });
+      }
+      const isExistingPhone = await DoctorModel.find({
+        phone: req.query.phone,
+      });
+      if (isExistingPhone.length > 0) {
+        return res.status(200).json({
+          data: true,
+        });
+      } else {
+        return res.status(200).json({
+          data: false,
+        });
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "invalid query params (allowable params: email || phone)",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
