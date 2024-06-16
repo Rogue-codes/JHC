@@ -468,3 +468,72 @@ export const validateDoctorEmailAndPhone = async (req, res) => {
     });
   }
 };
+
+export const changeDoctorStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id)
+      return res.status(404).json({
+        success: false,
+        message: "doctor id not found",
+      });
+
+    // get the doctor by id
+    const doctor = await DoctorModel.findById(id);
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor not found",
+      });
+    }
+    doctor.is_active ? (doctor.is_active = false) : (doctor.is_active = true);
+    await doctor.save();
+
+    res.status(200).json({
+      success: true,
+      message: `${
+        doctor.is_active
+          ? "Doctor Reactivated successfully"
+          : "Doctor Deactivated successfully"
+      }`,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor id not found",
+      });
+    }
+
+    const doctor = await DoctorModel.findById(id).select("-password");
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "doctor retrieved successfully",
+      data: doctor,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

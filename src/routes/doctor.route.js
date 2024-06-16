@@ -1,7 +1,9 @@
 import express from "express";
 import {
+  changeDoctorStatus,
   changeSystemGeneratedPassword,
   doctorLogin,
+  getDoctorById,
   getDoctors,
   registerDoctor,
   validateDoctorEmailAndPhone,
@@ -17,6 +19,16 @@ doctorRoute.patch(
   changeSystemGeneratedPassword
 );
 doctorRoute.get("/doctors/all", adminMiddleware, getDoctors);
-doctorRoute.post("/doctor/validate", adminMiddleware, validateDoctorEmailAndPhone);
+doctorRoute.post(
+  "/doctor/validate",
+  adminMiddleware,
+  validateDoctorEmailAndPhone
+);
+doctorRoute.post(
+  "/doctor/change-status/:id",
+  adminMiddleware,
+  changeDoctorStatus
+);
+doctorRoute.get("/doctor/:id", adminMiddleware, getDoctorById);
 
 export default doctorRoute;
