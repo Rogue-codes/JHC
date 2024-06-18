@@ -16,7 +16,8 @@ import {
 import bcrypt from "bcrypt";
 import { genToken } from "../utils/genToken.js";
 import cloudinary from "cloudinary";
-
+import { patientActivityLogMiddleware } from "../middlewares/logs.js";
+import PatientActivityLogModel from "../models/patient.activity.model.js";
 
 // register patient
 export const registerPatient = async (req, res) => {
@@ -37,6 +38,7 @@ export const registerPatient = async (req, res) => {
       blood_group,
       genotype,
       password,
+      gender,
     } = req.body;
     // check if email already exist
     const alreadyExistingUser = await PatientModel.findOne({ email });
@@ -61,15 +63,18 @@ export const registerPatient = async (req, res) => {
     const randDigits = genRandomNumber();
     const verifyToken = await bcrypt.hash(randDigits, salt);
 
-    const imageFile = req.file;
+    const imageFile = req?.file;
 
-    const base64String = Buffer.from(imageFile.buffer).toString("base64");
+    let imgURL;
+    if (imageFile) {
+      const base64String = Buffer?.from(imageFile?.buffer)?.toString("base64");
 
-    let dataURI = "data:" + imageFile.mimetype + ";base64," + base64String;
+      let dataURI = "data:" + imageFile?.mimetype + ";base64," + base64String;
 
-    const response = await cloudinary.v2.uploader.upload(dataURI);
+      const response = await cloudinary.v2.uploader.upload(dataURI);
 
-    const imgURL = response.url;
+      imgURL = response.url;
+    }
 
     // create new patient
     const newPatient = await PatientModel.create({
@@ -82,8 +87,11 @@ export const registerPatient = async (req, res) => {
       genotype,
       password,
       verifyToken,
-      img_url: imgURL,
+      img_url: imgURL ? imgURL : null,
+      gender,
     });
+
+    patientActivityLogMiddleware("CREATION", newPatient);
 
     // send it to patient mail
     sendPatientWelcomeMail(
@@ -109,7 +117,7 @@ export const registerPatient = async (req, res) => {
         "password",
         "is_verified",
         "img_url",
-        "patient_id"
+        "patient_id",
       ]),
     });
   } catch (error) {
@@ -178,6 +186,8 @@ export const verifyAccount = async (req, res) => {
     patient.tokenExpiresIn = null;
 
     await patient.save();
+
+    patientActivityLogMiddleware("VERIFICATION", patient);
 
     res.status(200).json({
       success: true,
@@ -355,6 +365,138 @@ export const patientLogin = async (req, res) => {
         "is_verified",
       ]),
       access_token: token,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAllPatients = async (req, res) => {
+  try {
+    let query = PatientModel.find();
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, "i");
+      query = query.find({
+        $or: [
+          { first_name: searchRegex },
+          { last_name: searchRegex },
+          { patient_id: searchRegex },
+        ],
+      });
+    }
+
+    if (req.query.sort) {
+      const sortField = req.query.sort;
+      query = query.sort(sortField);
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    const patientsCount = await PatientModel.countDocuments(query.getQuery());
+    const last_page = Math.ceil(patientsCount / limit);
+
+    if (page > last_page && last_page > 0) {
+      throw new Error("This page does not exist");
+    }
+
+    const allPatients = await query.select(
+      "-password -tokenExpiresIn -verifyToken"
+    );
+
+    if (!allPatients.length) {
+      return res.status(200).json({
+        status: "success",
+        message: "No patient found",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "All patients retrieved successfully",
+      data: allPatients,
+      meta: {
+        per_page: limit,
+        current_page: page,
+        last_page: last_page,
+        total: patientsCount,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getPatientById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "id is required",
+      });
+    }
+
+    const patient = await PatientModel.findById(id).select(
+      "-password -verifyToken -tokenExpiresIn"
+    );
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "patient not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "patient retrieved successfully",
+      data: patient,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getPatientActivityLogs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "patient id not found",
+      });
+    }
+
+    const log = await PatientActivityLogModel.find({ patientId: id });
+    if (!log) {
+      return res.status(404).json({
+        success: false,
+        message: "patient not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "patient activity logs retrieved successfully",
+      data: log,
     });
   } catch (error) {
     console.log(error);

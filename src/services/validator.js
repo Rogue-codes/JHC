@@ -23,11 +23,17 @@ const registerPatientSchema = Joi.object({
       "any.required": "Date of birth is required",
     }),
   last_name: Joi.string().min(3).required(),
-  blood_group: Joi.string().min(2).max(3).required(),
-  genotype: Joi.string().min(2).max(2).required(),
+  blood_group: Joi.string()
+    .valid("A+", "B+", "AB+", "0+", "A-", "B-", "AB-", "0-")
+    .min(2)
+    .max(3)
+    .required(),
+  genotype: Joi.string().valid("AA", "AS", "SS").min(2).max(2).required(),
+  gender: Joi.string().valid("male", "female").min(2).max(2).required(),
   phone: Joi.string().min(11).max(15).required(),
   password: Joi.string().min(6).required(),
   confirm_password: Joi.ref("password"),
+  patient_img: Joi.any()
 });
 
 const registerDoctorSchema = Joi.object({
