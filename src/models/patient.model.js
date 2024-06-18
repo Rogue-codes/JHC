@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 import bcrypt from 'bcrypt'
 
 const patientSchema = new mongoose.Schema({
+  patient_id:{
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
   first_name: {
     type: String,
     required: true,
@@ -58,12 +64,22 @@ const patientSchema = new mongoose.Schema({
       return new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours in milliseconds
     },
   },
+  patient_id: {
+    type: String,
+    unique: true,
+  },
+
 });
 
 patientSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+
+  // Generate sequential ID based on count of existing documents
+  const count = await PatientModel.countDocuments({});
+  const paddedCount = String(count + 1).padStart(3, "0");
+  this.patient_id = `JHC-${paddedCount}`;
 });
 
 patientSchema.methods.comparePassword = async function(password){

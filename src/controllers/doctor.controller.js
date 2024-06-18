@@ -11,6 +11,8 @@ import { sendDoctorWelcomeMail } from "../services/mail.service.js";
 import bcrypt from "bcrypt";
 import { genToken } from "../utils/genToken.js";
 import DoctorModel from "../models/doctor.model.js";
+import { activityLogMiddleware } from "../middlewares/logs.js";
+import ActivityLogModel from "../models/activityLog.model.js";
 
 // register doctor
 export const registerDoctor = async (req, res) => {
@@ -70,6 +72,8 @@ export const registerDoctor = async (req, res) => {
       img_url,
       gender,
     });
+
+    activityLogMiddleware("ADMIN", "Creation", newDoctor);
 
     // return success message
     res.status(201).json({
@@ -489,6 +493,10 @@ export const changeDoctorStatus = async (req, res) => {
     doctor.is_active ? (doctor.is_active = false) : (doctor.is_active = true);
     await doctor.save();
 
+    const active = doctor.is_active ? "REACTIVATION" : "DEACTIVATION";
+
+    activityLogMiddleware("ADMIN", active, doctor);
+
     res.status(200).json({
       success: true,
       message: `${
@@ -528,6 +536,90 @@ export const getDoctorById = async (req, res) => {
       success: true,
       message: "doctor retrieved successfully",
       data: doctor,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const modifyDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor id not found",
+      });
+    }
+
+    const { error } = validateDoctorSchema(req.body);
+    if (error) {
+      return res.status(422).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    const doctor = await DoctorModel.findById(id).select("-password");
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor not found",
+      });
+    }
+
+    doctor.first_name = req.body.first_name;
+    doctor.last_name = req.body.last_name;
+    doctor.phone = req.body.phone;
+    doctor.unit = req.body.unit;
+    doctor.DOB = req.body.DOB;
+    doctor.is_consultant = req.body.is_consultant;
+    doctor.gender = req.body.gender;
+
+    await doctor.save();
+
+    activityLogMiddleware("ADMIN", "Modification", doctor);
+
+    res.status(200).json({
+      success: true,
+      message: "doctor updated successfully",
+      data: doctor,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getActivityLogs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor id not found",
+      });
+    }
+
+    const log = await ActivityLogModel.find({ doctorId: id });
+    if (!log) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "doctor activity logs retrieved successfully",
+      data: log,
     });
   } catch (error) {
     console.log(error);

@@ -15,6 +15,8 @@ import {
 } from "../services/mail.service.js";
 import bcrypt from "bcrypt";
 import { genToken } from "../utils/genToken.js";
+import cloudinary from "cloudinary";
+
 
 // register patient
 export const registerPatient = async (req, res) => {
@@ -59,6 +61,16 @@ export const registerPatient = async (req, res) => {
     const randDigits = genRandomNumber();
     const verifyToken = await bcrypt.hash(randDigits, salt);
 
+    const imageFile = req.file;
+
+    const base64String = Buffer.from(imageFile.buffer).toString("base64");
+
+    let dataURI = "data:" + imageFile.mimetype + ";base64," + base64String;
+
+    const response = await cloudinary.v2.uploader.upload(dataURI);
+
+    const imgURL = response.url;
+
     // create new patient
     const newPatient = await PatientModel.create({
       email,
@@ -70,6 +82,7 @@ export const registerPatient = async (req, res) => {
       genotype,
       password,
       verifyToken,
+      img_url: imgURL,
     });
 
     // send it to patient mail
@@ -95,6 +108,8 @@ export const registerPatient = async (req, res) => {
         "genotype",
         "password",
         "is_verified",
+        "img_url",
+        "patient_id"
       ]),
     });
   } catch (error) {

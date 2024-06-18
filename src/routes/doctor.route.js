@@ -3,8 +3,10 @@ import {
   changeDoctorStatus,
   changeSystemGeneratedPassword,
   doctorLogin,
+  getActivityLogs,
   getDoctorById,
   getDoctors,
+  modifyDoctor,
   registerDoctor,
   validateDoctorEmailAndPhone,
 } from "../controllers/doctor.controller.js";
@@ -30,5 +32,7 @@ doctorRoute.post(
   changeDoctorStatus
 );
 doctorRoute.get("/doctor/:id", adminMiddleware, getDoctorById);
+doctorRoute.patch("/doctor/update/:id", adminMiddleware, modifyDoctor);
+doctorRoute.get("/doctor/logs/:id", adminMiddleware, getActivityLogs);
 
 export default doctorRoute;
