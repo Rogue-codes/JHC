@@ -11,7 +11,7 @@ const activityLogSchema = new mongoose.Schema({
   },
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Doctor",
+    ref: "Patient",
   },
 });
 

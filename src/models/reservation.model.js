@@ -6,10 +6,6 @@ const reservationSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    date: {
-      type: Date,
-      required: true,
-    },
     patient: {
       type: mongoose.Types.ObjectId,
       ref: "Patient",

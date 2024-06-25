@@ -3,6 +3,7 @@ import {
   changeDoctorStatus,
   changeSystemGeneratedPassword,
   doctorLogin,
+  getActiveDoctors,
   getActivityLogs,
   getDoctorById,
   getDoctors,
@@ -11,6 +12,7 @@ import {
   validateDoctorEmailAndPhone,
 } from "../controllers/doctor.controller.js";
 import { adminMiddleware } from "../middlewares/admin.middleware.js";
+import { reservationMiddleware } from "../middlewares/resrvation.middleware.js";
 
 const doctorRoute = express.Router();
 
@@ -34,5 +36,6 @@ doctorRoute.post(
 doctorRoute.get("/doctor/:id", adminMiddleware, getDoctorById);
 doctorRoute.patch("/doctor/update/:id", adminMiddleware, modifyDoctor);
 doctorRoute.get("/doctor/logs/:id", adminMiddleware, getActivityLogs);
+doctorRoute.get("/doctors/active", reservationMiddleware, getActiveDoctors);
 
 export default doctorRoute;

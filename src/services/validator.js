@@ -36,6 +36,32 @@ const registerPatientSchema = Joi.object({
   patient_img: Joi.any()
 });
 
+const modifyPatientSchema = Joi.object({
+  email: Joi.string().email().required(),
+  first_name: Joi.string().min(3).required(),
+  DOB: Joi.date()
+    .iso()
+    .less("now")
+    .greater(new Date(new Date().setFullYear(new Date().getFullYear() - 100)))
+    .required()
+    .messages({
+      "date.base": "Date of birth must be a valid date",
+      "date.less": "Date of birth must be in the past",
+      "date.greater": "Date of birth must be within the last 100 years",
+      "any.required": "Date of birth is required",
+    }),
+  last_name: Joi.string().min(3).required(),
+  blood_group: Joi.string()
+    .valid("A+", "B+", "AB+", "0+", "A-", "B-", "AB-", "0-")
+    .min(2)
+    .max(3)
+    .required(),
+  genotype: Joi.string().valid("AA", "AS", "SS").min(2).max(2).required(),
+  gender: Joi.string().valid("male", "female").min(2).max(2).required(),
+  phone: Joi.string().min(11).max(15).required(),
+  patient_img: Joi.any(),
+});
+
 const registerDoctorSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "Email must be a valid email",
@@ -126,11 +152,6 @@ const createReservationSchema = Joi.object({
     "string.isoDate": "Time must be a valid ISO date string",
     "any.required": "Time is required",
   }),
-  date: Joi.date().iso().required().messages({
-    "date.base": "Date must be a valid date",
-    "date.format": "Date must be in ISO format",
-    "any.required": "Date is required",
-  }),
   patient: Joi.string().required().messages({
     "any.required": "Patient is required",
   }),
@@ -162,8 +183,9 @@ const validatePhoneSchema = Joi.object({
 });
 
 export const validateLogin = validator(loginSchema);
-export const validateCreateHospital = validator(createHospitalSchema);
+export const validateCreateHospital = validator(createHospitalSchema);;
 export const validateCreatePatient = validator(registerPatientSchema);
+export const validateUpdatePatient = validator(modifyPatientSchema);
 export const validateVerifyAccount = validator(verifyAccountSchema);
 export const validateForgotPassword = validator(forgotPasswordSchema);
 export const validateResetPassword = validator(resetPasswordSchema);

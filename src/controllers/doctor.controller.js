@@ -629,3 +629,28 @@ export const getActivityLogs = async (req, res) => {
     });
   }
 };
+
+export const getActiveDoctors = async (req, res) => {
+  try {
+    const doctors = await DoctorModel.find({ is_active: true });
+    if (!doctors) {
+      return res.status(404).json({
+        success: false,
+        message: "doctor not found",
+        data: [],
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "active doctors retrieved successfully",
+      data: doctors,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

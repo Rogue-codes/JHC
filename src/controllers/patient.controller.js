@@ -1,8 +1,11 @@
 import {
   validateCreatePatient,
+  validateEmail,
   validateForgotPassword,
   validateLogin,
+  validatePhone,
   validateResetPassword,
+  validateUpdatePatient,
   validateVerifyAccount,
 } from "../services/validator.js";
 import PatientModel from "../models/patient.model.js";
@@ -22,6 +25,7 @@ import PatientActivityLogModel from "../models/patient.activity.model.js";
 // register patient
 export const registerPatient = async (req, res) => {
   try {
+    console.log("req", req);
     const { error } = validateCreatePatient(req.body);
     if (error) {
       return res.status(422).json({
@@ -39,6 +43,7 @@ export const registerPatient = async (req, res) => {
       genotype,
       password,
       gender,
+      patient_img,
     } = req.body;
     // check if email already exist
     const alreadyExistingUser = await PatientModel.findOne({ email });
@@ -49,6 +54,8 @@ export const registerPatient = async (req, res) => {
       });
     }
 
+    console.log("a");
+
     // check if phone number already exist
     const alreadyExistingPhone = await PatientModel.findOne({ phone });
     if (alreadyExistingPhone) {
@@ -58,23 +65,12 @@ export const registerPatient = async (req, res) => {
       });
     }
 
+    console.log("b");
+
     // gen verify token
     const salt = await bcrypt.genSalt(10);
     const randDigits = genRandomNumber();
     const verifyToken = await bcrypt.hash(randDigits, salt);
-
-    const imageFile = req?.file;
-
-    let imgURL;
-    if (imageFile) {
-      const base64String = Buffer?.from(imageFile?.buffer)?.toString("base64");
-
-      let dataURI = "data:" + imageFile?.mimetype + ";base64," + base64String;
-
-      const response = await cloudinary.v2.uploader.upload(dataURI);
-
-      imgURL = response.url;
-    }
 
     // create new patient
     const newPatient = await PatientModel.create({
@@ -87,9 +83,10 @@ export const registerPatient = async (req, res) => {
       genotype,
       password,
       verifyToken,
-      img_url: imgURL ? imgURL : null,
+      img_url: patient_img ? patient_img : null,
       gender,
     });
+    console.log("e");
 
     patientActivityLogMiddleware("CREATION", newPatient);
 
@@ -497,6 +494,159 @@ export const getPatientActivityLogs = async (req, res) => {
       success: true,
       message: "patient activity logs retrieved successfully",
       data: log,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const validatePatientEmailAndPhone = async (req, res) => {
+  try {
+    if (req.query.email) {
+      const { error } = validateEmail(req.query);
+      if (error) {
+        return res.status(422).json({
+          success: false,
+          message: error.details[0].message,
+        });
+      }
+      const isExistingEmail = await PatientModel.find({
+        email: req.query.email,
+      });
+      if (isExistingEmail.length > 0) {
+        return res.status(200).json({
+          data: true,
+        });
+      } else {
+        return res.status(200).json({
+          data: false,
+        });
+      }
+    } else if (req.query.phone) {
+      const { error } = validatePhone(req.query);
+      if (error) {
+        return res.status(422).json({
+          success: false,
+          message: error.details[0].message,
+        });
+      }
+      const isExistingPhone = await PatientModel.find({
+        phone: req.query.phone,
+      });
+      if (isExistingPhone.length > 0) {
+        return res.status(200).json({
+          data: true,
+        });
+      } else {
+        return res.status(200).json({
+          data: false,
+        });
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "invalid query params (allowable params: email || phone)",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const modifyPatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "patient id not found",
+      });
+    }
+
+    const { error } = validateUpdatePatient(req.body);
+    if (error) {
+      return res.status(422).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    const patient = await PatientModel.findById(id).select("-password");
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "patient not found",
+      });
+    }
+
+    patient.first_name = req.body.first_name;
+    patient.last_name = req.body.last_name;
+    patient.phone = req.body.phone;
+    patient.blood_group = req.body.blood_group;
+    patient.DOB = req.body.DOB;
+    patient.genotype = req.body.genotype;
+    patient.gender = req.body.gender;
+
+    if (req.body.patient_img) {
+      patient.img_url = req.body.patient_img;
+    }
+
+    await patient.save();
+
+    patientActivityLogMiddleware("MODIFICATION", patient);
+
+    res.status(200).json({
+      success: true,
+      message: "patient updated successfully",
+      data: patient,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const searchPatients = async (req, res) => {
+  try {
+    const { search } = req.query; // Extract search term from query parameters
+    const query = {};
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i"); // Create regex from the search term
+      query.$or = [
+        { first_name: searchRegex },
+        { last_name: searchRegex },
+        { patient_id: searchRegex },
+      ];
+    }
+
+    const patients = await PatientModel.find(query).select(
+      "-password -tokenExpiresIn -verifyToken"
+    );
+
+    if (!patients.length) {
+      return res.status(200).json({
+        status: "success",
+        message: "No patient found",
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "All patients retrieved successfully",
+      data: patients,
     });
   } catch (error) {
     console.log(error);
