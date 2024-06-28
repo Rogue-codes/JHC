@@ -153,20 +153,110 @@ export const geReservationActivityLogs = async (req, res) => {
   }
 };
 
+// export const getAllReservations = async (req, res) => {
+//   try {
+//     let query = ReservationModel.find()
+//       .populate("patient", "first_name last_name")
+//       .populate("doctor", "first_name last_name");
+//     if (req.query.search) {
+//       const searchRegex = new RegExp(req.query.search, "i");
+//       query = query.find({
+//         $or: [
+//           { "patient.first_name": searchRegex },
+//           { "patient.last_name": searchRegex },
+//           { "doctor.first_name": searchRegex },
+//           { "doctor.last_name": searchRegex },
+//         ],
+//       });
+//     }
+
+//     if (req.query.status) {
+//       query = query.find({
+//         reservation_status: req.query.status,
+//       });
+//     }
+
+//     if (req.query.sort) {
+//       const sortField = req.query.sort;
+//       query = query.sort(sortField);
+//     } else {
+//       query = query.sort("-createdAt");
+//     }
+
+//     const page = parseInt(req.query.page, 10) || 1;
+//     const limit = parseInt(req.query.limit, 10) || 10;
+
+//     const skip = (page - 1) * limit;
+//     query.skip(skip).limit(limit);
+
+//     const reservationsCount = await ReservationModel.countDocuments(
+//       query.getQuery()
+//     );
+//     const last_page = Math.ceil(reservationsCount / limit);
+
+//     if (page > last_page && last_page > 0) {
+//       throw new Error("This page does not exist");
+//     }
+
+//     const allReservations = await query
+//       .populate("doctor", "first_name last_name")
+//       .populate("patient", "first_name last_name DOB");
+
+//     if (!allReservations.length) {
+//       return res.status(200).json({
+//         status: "success",
+//         message: "No reservation found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "All reservations retrieved successfully",
+//       data: allReservations,
+//       meta: {
+//         per_page: limit,
+//         current_page: page,
+//         last_page: last_page,
+//         total: reservationsCount,
+//       },
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const getAllReservations = async (req, res) => {
   try {
-    let query = ReservationModel.find();
-    if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, "i");
+    // Initialize the query
+    let query = ReservationModel.find()
+      .populate("patient", "first_name last_name DOB")
+      .populate("doctor", "first_name last_name");
+
+    // Apply search filter
+    // if (req.query.search) {
+    //   const searchRegex = new RegExp(req.query.search, "i");
+    //   query = query.find({
+    //     $or: [
+    //       { "patient.first_name": searchRegex },
+    //       { "patient.last_name": searchRegex },
+    //       { "doctor.first_name": searchRegex },
+    //       { "doctor.last_name": searchRegex },
+    //     ],
+    //   });
+    // }
+
+    // Apply status filter
+    if (req.query.status) {
       query = query.find({
-        $or: [
-          { first_name: searchRegex },
-          { last_name: searchRegex },
-          { patient_id: searchRegex },
-        ],
+        reservation_status: req.query.status,
       });
     }
 
+    // Apply sorting
     if (req.query.sort) {
       const sortField = req.query.sort;
       query = query.sort(sortField);
@@ -174,32 +264,61 @@ export const getAllReservations = async (req, res) => {
       query = query.sort("-createdAt");
     }
 
+    // Pagination
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
-
     const skip = (page - 1) * limit;
-    query.skip(skip).limit(limit);
 
+    query = query.skip(skip).limit(limit);
+
+    // Debugging log
+    console.log("Query:", query.getQuery());
+
+    // Count the total documents for pagination
     const reservationsCount = await ReservationModel.countDocuments(
       query.getQuery()
     );
     const last_page = Math.ceil(reservationsCount / limit);
 
     if (page > last_page && last_page > 0) {
-      throw new Error("This page does not exist");
+      return res.status(404).json({
+        success: false,
+        message: "This page does not exist",
+      });
     }
 
-    const allReservations = await query
-      .populate("doctor", "first_name last_name")
-      .populate("patient", "first_name last_name DOB");
+    // Execute the query
+    const reservations = await query.exec();
 
-    if (!allReservations.length) {
+    console.log("reservations");
+
+    if (!reservations.length) {
       return res.status(200).json({
         status: "success",
         message: "No reservation found",
       });
     }
 
+    const searchQuery = req.query.search;
+
+    let allReservations;
+    if (req.query.search) {
+      allReservations = reservations.filter(
+        (reservation) =>
+          reservation.patient.first_name.toLowerCase() ===
+            searchQuery.toLowerCase() ||
+          reservation.patient.last_name.toLowerCase() ===
+            searchQuery.toLowerCase() ||
+          reservation.doctor.first_name.toLowerCase() ===
+            searchQuery.toLowerCase() ||
+          reservation.doctor.last_name.toLowerCase() ===
+            searchQuery.toLowerCase()
+      );
+    } else {
+      allReservations = reservations;
+    }
+
+    // Return the result
     return res.status(200).json({
       status: "success",
       message: "All reservations retrieved successfully",
@@ -244,6 +363,182 @@ export const getReservationById = async (req, res) => {
       success: true,
       message: "reservation retrieved successfully",
       data: reservation,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const rescheduleReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { time } = req.body;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "reservation id not found",
+      });
+    }
+
+    if (!time) {
+      return res.status(400).json({
+        success: false,
+        message: "time is required",
+      });
+    }
+
+    const reservation = await ReservationModel.findById(id);
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "reservation not found",
+      });
+    }
+
+    const oldReservationTime = reservation.time;
+    const existingReservation = await ReservationModel.findOne({
+      doctor: reservation.doctor,
+      time,
+    });
+    if (existingReservation) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor already has an appointment at this time",
+      });
+    }
+
+    if (reservation.reservation_status === "rejected") {
+      return res.status(400).json({
+        success: false,
+        message: "cannot reschedule a reservation that has been rejected",
+      });
+    }
+
+    // Check reservation time is at least 30 minutes ahead
+    const reservationDateTime = new Date(time);
+    const currentDateTime = new Date();
+    const minReservationTime = new Date(currentDateTime.getTime() + 30 * 60000);
+
+    if (reservationDateTime < minReservationTime) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Reservation time must be at least 30 minutes ahead of the current time",
+      });
+    }
+
+    // Validate that the reservation date is not in the past
+    const currentDate = new Date().setHours(0, 0, 0, 0);
+    const reservationDate = new Date(time).setHours(0, 0, 0, 0);
+
+    if (reservationDate < currentDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation date cannot be in the past",
+      });
+    }
+
+    reservation.time = time;
+    await reservation.save();
+
+    // Populate doctor and patient details
+    const populatedReservation = await ReservationModel.findById(
+      reservation._id
+    )
+      .populate("doctor")
+      .populate("patient");
+
+    reservationActivityLogMiddleware(
+      "Admin",
+      "RESCHEDULED",
+      populatedReservation.patient,
+      populatedReservation.doctor,
+      populatedReservation.time,
+      populatedReservation._id,
+      oldReservationTime
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Reservation rescheduled successfully",
+      data: reservation,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const cancelReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "reservation id not found",
+      });
+    }
+
+    const reservation = await ReservationModel.findById(id);
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "reservation not found",
+      });
+    }
+
+    if (reservation.reservation_status === "rejected") {
+      return res.status(404).json({
+        success: false,
+        message: "this reservation has already been rejected",
+      });
+    }
+
+    if (reservation.reservation_status === "ongoing") {
+      return res.status(404).json({
+        success: false,
+        message: "cannot reject an ongoing reservation",
+      });
+    }
+
+    if (reservation.reservation_status === "completed") {
+      return res.status(404).json({
+        success: false,
+        message: "cannot reject an already completed reservation",
+      });
+    }
+
+    reservation.reservation_status = "rejected";
+    await reservation.save();
+
+    // Populate doctor and patient details
+    const populatedReservation = await ReservationModel.findById(
+      reservation._id
+    )
+      .populate("doctor")
+      .populate("patient");
+
+    //activity log
+    reservationActivityLogMiddleware(
+      "Admin",
+      "REJECTED",
+      populatedReservation.patient,
+      populatedReservation.doctor,
+      populatedReservation.time,
+      populatedReservation._id
+    );
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Reservation has been cancelled patient will recieve an email informing them that reservation has been cancelled",
     });
   } catch (error) {
     console.log(error);

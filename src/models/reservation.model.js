@@ -23,8 +23,14 @@ const reservationSchema = new mongoose.Schema(
     },
     reservation_status: {
       type: String,
-      enum: ["pending", "ongoing", "completed"],
-      default: "pending",
+      enum: [
+        "pending",
+        "awaiting doctor approval",
+        "rejected",
+        "ongoing",
+        "completed",
+      ],
+      default: "awaiting doctor approval",
     },
     fee_status: {
       type: String,

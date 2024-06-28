@@ -37,22 +37,29 @@ export const patientActivityLogMiddleware = async (action, target) => {
   }
 };
 
-
 export const reservationActivityLogMiddleware = async (
   initiator,
   action,
   patient,
   doctor,
   time,
-  id
+  id,
+  oldTime
 ) => {
   try {
     // Format the time using date-fns
     const formattedTime = format(new Date(time), "PPPP p");
+    const formattedOldTime = format(new Date(oldTime), "PPPP p");
+
+    console.log("formattedOldTime", formattedOldTime);
 
     let activity;
     if (initiator === "Admin") {
-      activity = `${initiator} ${action} an appointment for ${patient.first_name} ${patient.last_name} with ${doctor.first_name} ${doctor.last_name} at ${formattedTime}`;
+      if (action === "RESCHEDULED") {
+        activity = `${initiator} ${action} an appointment for ${patient.first_name} ${patient.last_name} with ${doctor.first_name} ${doctor.last_name} from ${formattedOldTime} to ${formattedTime}`;
+      } else {
+        activity = `${initiator} ${action} an appointment for ${patient.first_name} ${patient.last_name} with ${doctor.first_name} ${doctor.last_name} at ${formattedTime}`;
+      }
     } else {
       activity = `${patient.first_name} ${patient.last_name} ${action} an appointment with ${doctor.first_name} ${doctor.last_name} at ${formattedTime}`;
     }
@@ -69,4 +76,3 @@ export const reservationActivityLogMiddleware = async (
     console.log(error);
   }
 };
-
