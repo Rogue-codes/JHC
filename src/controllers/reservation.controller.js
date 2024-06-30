@@ -153,101 +153,12 @@ export const geReservationActivityLogs = async (req, res) => {
   }
 };
 
-// export const getAllReservations = async (req, res) => {
-//   try {
-//     let query = ReservationModel.find()
-//       .populate("patient", "first_name last_name")
-//       .populate("doctor", "first_name last_name");
-//     if (req.query.search) {
-//       const searchRegex = new RegExp(req.query.search, "i");
-//       query = query.find({
-//         $or: [
-//           { "patient.first_name": searchRegex },
-//           { "patient.last_name": searchRegex },
-//           { "doctor.first_name": searchRegex },
-//           { "doctor.last_name": searchRegex },
-//         ],
-//       });
-//     }
-
-//     if (req.query.status) {
-//       query = query.find({
-//         reservation_status: req.query.status,
-//       });
-//     }
-
-//     if (req.query.sort) {
-//       const sortField = req.query.sort;
-//       query = query.sort(sortField);
-//     } else {
-//       query = query.sort("-createdAt");
-//     }
-
-//     const page = parseInt(req.query.page, 10) || 1;
-//     const limit = parseInt(req.query.limit, 10) || 10;
-
-//     const skip = (page - 1) * limit;
-//     query.skip(skip).limit(limit);
-
-//     const reservationsCount = await ReservationModel.countDocuments(
-//       query.getQuery()
-//     );
-//     const last_page = Math.ceil(reservationsCount / limit);
-
-//     if (page > last_page && last_page > 0) {
-//       throw new Error("This page does not exist");
-//     }
-
-//     const allReservations = await query
-//       .populate("doctor", "first_name last_name")
-//       .populate("patient", "first_name last_name DOB");
-
-//     if (!allReservations.length) {
-//       return res.status(200).json({
-//         status: "success",
-//         message: "No reservation found",
-//       });
-//     }
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "All reservations retrieved successfully",
-//       data: allReservations,
-//       meta: {
-//         per_page: limit,
-//         current_page: page,
-//         last_page: last_page,
-//         total: reservationsCount,
-//       },
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
 export const getAllReservations = async (req, res) => {
   try {
     // Initialize the query
     let query = ReservationModel.find()
       .populate("patient", "first_name last_name DOB")
       .populate("doctor", "first_name last_name");
-
-    // Apply search filter
-    // if (req.query.search) {
-    //   const searchRegex = new RegExp(req.query.search, "i");
-    //   query = query.find({
-    //     $or: [
-    //       { "patient.first_name": searchRegex },
-    //       { "patient.last_name": searchRegex },
-    //       { "doctor.first_name": searchRegex },
-    //       { "doctor.last_name": searchRegex },
-    //     ],
-    //   });
-    // }
 
     // Apply status filter
     if (req.query.status) {
@@ -305,14 +216,18 @@ export const getAllReservations = async (req, res) => {
     if (req.query.search) {
       allReservations = reservations.filter(
         (reservation) =>
-          reservation.patient.first_name.toLowerCase() ===
-            searchQuery.toLowerCase() ||
-          reservation.patient.last_name.toLowerCase() ===
-            searchQuery.toLowerCase() ||
-          reservation.doctor.first_name.toLowerCase() ===
-            searchQuery.toLowerCase() ||
-          reservation.doctor.last_name.toLowerCase() ===
-            searchQuery.toLowerCase()
+          reservation.patient.first_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          reservation.patient.last_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          reservation.doctor.first_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          reservation.doctor.last_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
       );
     } else {
       allReservations = reservations;

@@ -33,7 +33,7 @@ const registerPatientSchema = Joi.object({
   phone: Joi.string().min(11).max(15).required(),
   password: Joi.string().min(6).required(),
   confirm_password: Joi.ref("password"),
-  patient_img: Joi.any()
+  patient_img: Joi.any(),
 });
 
 const modifyPatientSchema = Joi.object({
@@ -182,8 +182,51 @@ const validatePhoneSchema = Joi.object({
   }),
 });
 
+const createProductSchema = Joi.object({
+  name: Joi.string().min(3).required().messages({
+    "string.base": "Name must be a string",
+    "string.min": "Name must be at least 3 characters long",
+    "any.required": "Name is required",
+  }),
+  price: Joi.number().greater(50).required().messages({
+    "number.base": "Price must be a number",
+    "number.greater": "Price must be greater than 50",
+    "any.required": "Price is required",
+  }),
+  quantity: Joi.number().greater(1).required().messages({
+    "number.base": "Quantity must be a number",
+    "number.greater": "Quantity must be greater than 1",
+    "any.required": "Quantity is required",
+  }),
+  description: Joi.string().min(3).required().messages({
+    "string.base": "Description must be a string",
+    "string.min": "Description must be at least 3 characters long",
+    "any.required": "Description is required",
+  }),
+  expiry_date: Joi.date().iso().required().messages({
+    "date.base": "Expiry date must be a valid date",
+    "date.format": "Expiry date must be in ISO format",
+    "any.required": "Expiry date is required",
+  }),
+  manufacturer: Joi.string().min(3).required().messages({
+    "string.base": "Manufacturer must be a string",
+    "string.min": "Manufacturer must be at least 3 characters long",
+    "any.required": "Manufacturer is required",
+  }),
+  category: Joi.string()
+    .valid("Inhaler", "Tablet", "Syrup", "Cream", "Capsule", "Soap")
+    .required()
+    .messages({
+      "string.base": "Category must be a string",
+      "any.only":
+        "Category must be one of Inhaler, Tablet, Syrup, Cream, Capsule, Soap",
+      "any.required": "Category is required",
+    }),
+  image: Joi.any(),
+});
+
 export const validateLogin = validator(loginSchema);
-export const validateCreateHospital = validator(createHospitalSchema);;
+export const validateCreateHospital = validator(createHospitalSchema);
 export const validateCreatePatient = validator(registerPatientSchema);
 export const validateUpdatePatient = validator(modifyPatientSchema);
 export const validateVerifyAccount = validator(verifyAccountSchema);
@@ -196,3 +239,4 @@ export const validateResetSystemGeneratedPassword = validator(
 export const validateReservation = validator(createReservationSchema);
 export const validateEmail = validator(validateEmailSchema);
 export const validatePhone = validator(validatePhoneSchema);
+export const validateProduct = validator(createProductSchema);

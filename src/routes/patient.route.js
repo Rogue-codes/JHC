@@ -12,7 +12,6 @@ import {
   validatePatientEmailAndPhone,
   verifyAccount,
 } from "../controllers/patient.controller.js";
-import { uploadImg } from "../middlewares/uploadimage.middleware.js";
 import { adminMiddleware } from "../middlewares/admin.middleware.js";
 
 const patientRoute = express.Router();
