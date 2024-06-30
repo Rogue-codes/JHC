@@ -87,6 +87,23 @@ export const getAllProducts = async (req, res) => {
       query = query.sort("-createdAt");
     }
 
+    // Filter by category if the 'category' query parameter is present
+    if (req.query.category) {
+      query = query.where("category").equals(req.query.category);
+    }
+
+    // filter by stock
+    if (req.query.stock === "out of stock") {
+      query = query.where("quantity").equals(0);
+    } else if (req.query.stock === "in stock") {
+      query = query.where("quantity").gt(0);
+    }
+
+    // filter by manufacturers
+    if (req.query.manufacturer) {
+      query = query.where("manufacturer").equals(req.query.manufacturer);
+    }
+
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
 
@@ -106,13 +123,13 @@ export const getAllProducts = async (req, res) => {
     if (!allProducts.length) {
       return res.status(200).json({
         status: "success",
-        message: "No patient found",
+        message: "No product found",
       });
     }
 
     return res.status(200).json({
       status: "success",
-      message: "All patients retrieved successfully",
+      message: "All products retrieved successfully",
       data: allProducts,
       meta: {
         per_page: limit,
@@ -129,6 +146,23 @@ export const getAllProducts = async (req, res) => {
     });
   }
 };
+
+export const getManufacturers = async (req, res) => {
+  try{
+    const manufacturers = await ProductModel.distinct("manufacturer");
+    res.status(200).json({
+      success: true,
+      message: "Manufacturers retrieved successfully",
+      data: manufacturers,
+    });
+  }catch(error){
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 
 export const modifyProduct = async (req, res) => {
   try {
@@ -262,5 +296,3 @@ export const addProduct = async (req, res) => {
     });
   }
 };
-
-
