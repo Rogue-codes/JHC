@@ -4,6 +4,7 @@ import lodash from "lodash";
 
 export const createProduct = async (req, res) => {
   try {
+    console.log("req.body", req.body);
     const { error } = validateProduct(req.body);
     if (error) {
       return res.status(422).json({
@@ -20,7 +21,7 @@ export const createProduct = async (req, res) => {
       quantity,
       category,
       manufacturer,
-      image,
+      images,
     } = req.body;
 
     const product = await ProductModel.findOne({ name });
@@ -39,7 +40,7 @@ export const createProduct = async (req, res) => {
       quantity,
       category,
       manufacturer,
-      image,
+      images,
     });
 
     res.status(201).json({
@@ -147,22 +148,55 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-export const getManufacturers = async (req, res) => {
-  try{
-    const manufacturers = await ProductModel.distinct("manufacturer");
+export const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "Product id not found",
+      });
+    }
+
+    const product = await ProductModel.findById(id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: "Manufacturers retrieved successfully",
-      data: manufacturers,
+      message: "Product retrieved successfully",
+      data: product,
     });
-  }catch(error){
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
-}
+};
+
+export const getManufacturers = async (req, res) => {
+  try {
+    const manufacturers = await ProductModel.distinct("manufacturer");
+    res.status(200).json({
+      success: true,
+      message: "Manufacturers retrieved successfully",
+      data: manufacturers,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 export const modifyProduct = async (req, res) => {
   try {

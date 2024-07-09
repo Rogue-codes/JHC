@@ -222,7 +222,7 @@ const createProductSchema = Joi.object({
         "Category must be one of Inhaler, Tablet, Syrup, Cream, Capsule, Soap",
       "any.required": "Category is required",
     }),
-  image: Joi.any(),
+  images: Joi.array(),
 });
 
 export const validateLogin = validator(loginSchema);
