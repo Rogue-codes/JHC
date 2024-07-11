@@ -289,7 +289,9 @@ export const deleteProduct = async (req, res) => {
 
 export const addProduct = async (req, res) => {
   try {
-    const { id, count } = req.body;
+    const { count } = req.body;
+    const { id } = req.params;
+    
 
     if (!id) {
       return res.status(404).json({

@@ -33,10 +33,9 @@ productRoute.get(
 );
 productRoute.put("/product/update/:id", adminMiddleware, modifyProduct);
 productRoute.delete("/product/delete/:id", adminMiddleware, deleteProduct);
-productRoute.delete(
+productRoute.patch(
   "/product/add/:id",
   adminMiddleware,
-  uploadImg.single("image"),
   addProduct
 );
 productRoute.get(
