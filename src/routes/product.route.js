@@ -9,7 +9,7 @@ import {
   getProductById,
   modifyProduct,
 } from "../controllers/product.controller.js";
-import { reservationMiddleware } from "../middlewares/resrvation.middleware.js";
+import { reservationMiddleware } from "../middlewares/reservation.middleware.js";
 import multer from "multer";
 import { UploadBulkProducts } from "../controllers/bulk.products.controller.js";
 import { uploadImg } from "../middlewares/uploadimage.middleware.js";

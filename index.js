@@ -9,6 +9,7 @@ import doctorRoute from "./src/routes/doctor.route.js";
 import { v2 as cloudinary } from "cloudinary";
 import reservationRoute from "./src/routes/reservation.route.js";
 import productRoute from "./src/routes/product.route.js";
+import messageRoute from "./src/routes/message.route.js";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use("/api/v1/JHC-hms", patientRoute);
 app.use("/api/v1/JHC-hms", doctorRoute);
 app.use("/api/v1/JHC-hms", reservationRoute);
 app.use("/api/v1/JHC-hms", productRoute);
+app.use("/api/v1/JHC-hms", messageRoute);
 
 app.listen(PORT, () => {
   console.log(`app listening on port ${PORT}`);

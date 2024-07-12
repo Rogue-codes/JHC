@@ -7,7 +7,7 @@ import {
   getReservationById,
   rescheduleReservation,
 } from "../controllers/reservation.controller.js";
-import { reservationMiddleware } from "../middlewares/resrvation.middleware.js";
+import { reservationMiddleware } from "../middlewares/reservation.middleware.js";
 import { adminMiddleware } from "../middlewares/admin.middleware.js";
 
 const reservationRoute = express.Router();

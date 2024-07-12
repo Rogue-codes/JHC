@@ -12,7 +12,7 @@ import {
   validateDoctorEmailAndPhone,
 } from "../controllers/doctor.controller.js";
 import { adminMiddleware } from "../middlewares/admin.middleware.js";
-import { reservationMiddleware } from "../middlewares/resrvation.middleware.js";
+import { reservationMiddleware } from "../middlewares/reservation.middleware.js";
 
 const doctorRoute = express.Router();
 
