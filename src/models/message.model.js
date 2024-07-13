@@ -5,20 +5,20 @@ const messageSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
-    senderType: {
-        type: String,
-        enum: ['Admin', 'Doctor', 'Patient'],
-        required: true,
-    },
+    // senderType: {
+    //     type: String,
+    //     enum: ['Admin', 'Doctor', 'Patient'],
+    //     required: true,
+    // },
     receiverId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
-    receiverType: {
-        type: String,
-        enum: ['Admin', 'Doctor', 'Patient'],
-        required: true,
-    },
+    // receiverType: {
+    //     type: String,
+    //     enum: ['Admin', 'Doctor', 'Patient'],
+    //     required: true,
+    // },
     message: {
         type: String,
         required: true,

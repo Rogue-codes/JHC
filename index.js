@@ -10,6 +10,7 @@ import { v2 as cloudinary } from "cloudinary";
 import reservationRoute from "./src/routes/reservation.route.js";
 import productRoute from "./src/routes/product.route.js";
 import messageRoute from "./src/routes/message.route.js";
+import { app, server } from "./src/socket/socket.js";
 
 dotenv.config();
 
@@ -19,7 +20,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const app = express();
 
 app.use(express.json());
 app.use(cors());
@@ -36,11 +36,11 @@ app.use("/api/v1/JHC-hms", reservationRoute);
 app.use("/api/v1/JHC-hms", productRoute);
 app.use("/api/v1/JHC-hms", messageRoute);
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`app listening on port ${PORT}`);
 });
 
-app.post("/", (req, res) => {
+app.get("/", (req, res) => {
   return res.send("Welcome to JHC Hospital management software");
 });
 
