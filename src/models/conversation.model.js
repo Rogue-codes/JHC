@@ -10,18 +10,11 @@ const conversationSchema = new mongoose.Schema(
     ],
     messages: [
       {
-        participantId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Message",
-          default: [],
-        },
-        participantType: {
-          type: String,
-          enum: ["Admin", "Doctor", "Patient"],
-          required: true,
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message",
+        default: [],
       },
-    ]
+    ],
   },
   {
     timestamps: true,
